@@ -66,6 +66,10 @@ class Colmap(DataParserConfig):
 
     ply_file: str = None
 
+    ply_with_rgb: bool = True
+
+    ply_downsample_rate: float = -1
+
     n_random_points: int = 100_000
 
     force_pinhole: bool = False
@@ -340,6 +344,7 @@ class ColmapDataParser(DataParser):
             mask_path = None
             if self.params.mask_dir is not None:
                 mask_path = os.path.join(self.params.mask_dir, "{}.png".format(extrinsics.name))
+                # mask_path = os.path.join(self.params.mask_dir, extrinsics.name.replace('.jpg', '.png'))
                 if os.path.exists(mask_path) is True:
                     loaded_mask_count += 1
                 else:
@@ -512,10 +517,23 @@ class ColmapDataParser(DataParser):
             rgb = (np.random.random((self.params.n_random_points, 3)) * 255).astype(np.uint8)
         elif self.params.points_from == "ply":
             assert self.params.ply_file is not None
-            from internal.utils.graphics_utils import fetch_ply_without_rgb_normalization
-            basic_pcd = fetch_ply_without_rgb_normalization(os.path.join(self.path, self.params.ply_file))
-            xyz = basic_pcd.points
-            rgb = basic_pcd.colors
+            if self.params.ply_with_rgb:
+                from internal.utils.graphics_utils import fetch_ply_without_rgb_normalization
+                basic_pcd = fetch_ply_without_rgb_normalization(os.path.join(self.path, self.params.ply_file))
+                xyz = basic_pcd.points
+                rgb = basic_pcd.colors
+            else:
+                from internal.utils.graphics_utils import fetch_ply_without_rgb
+                basic_pcd = fetch_ply_without_rgb(os.path.join(self.path, self.params.ply_file))
+                xyz = basic_pcd.points
+                rgb = np.random.random(xyz.shape) * 255
+                rgb = rgb.astype(np.uint8)
+            if 0.0 < self.params.ply_downsample_rate < 1.0:
+                print("downsample points with rate {}".format(self.params.ply_downsample_rate))
+                n_points = int(xyz.shape[0] * self.params.ply_downsample_rate)
+                indices = np.random.choice(xyz.shape[0], n_points, replace=False)
+                xyz = xyz[indices]
+                rgb = rgb[indices]
             print("load {} points from {}".format(xyz.shape[0], self.params.ply_file))
 
         # print information

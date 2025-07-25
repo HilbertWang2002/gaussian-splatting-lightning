@@ -317,7 +317,7 @@ class GSplatAppearanceEmbeddingRendererModule(GSplatV1RendererModule):
         scheduler = torch.optim.lr_scheduler.LambdaLR(
             optimizer=optimizer,
             lr_lambda=lambda iter: lr_final_factor ** min(max(iter - warm_up, 0) / max_steps, 1),
-            verbose=False,
+            # verbose=False,
         )
 
         return optimizer, scheduler
@@ -344,7 +344,7 @@ class GSplatAppearanceEmbeddingMipRendererModule(GSplatAppearanceEmbeddingRender
             compute_opacity_compensation=gaussian_model.config.opacity_compensation,
         )
 
-    def get_opacities(self, camera, gaussian_model, projections, visibility_filter, status: torch.Any, **kwargs):
+    def get_opacities(self, camera, gaussian_model, projections, visibility_filter, status: Any, **kwargs):
         opacity_compensation = status
         opacities, new_status = super().get_opacities(
             camera,

@@ -144,7 +144,7 @@ class GaussianModelLoader:
         if eval_mode is True:
             stage = "validation"
 
-        checkpoint = torch.load(checkpoint_path, map_location="cpu")
+        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
 
         model = cls.initialize_model_from_checkpoint(checkpoint, device)
         renderer = cls.initialize_renderer_from_checkpoint(checkpoint, stage, device)
@@ -285,7 +285,7 @@ class VanillaPVGModelLoader:
         model_ckpt_file = os.path.join(path, "chkpnt{}.pth".format(max_iteration))
         env_light_ckpt_file = os.path.join(path, "env_light_chkpnt{}.pth".format(max_iteration))
 
-        model_ckpt = torch.load(model_ckpt_file, map_location="cpu")
+        model_ckpt = torch.load(model_ckpt_file, map_location="cpu", weights_only=False)
         model_state_dict, model_config = cls.state_tuple_to_state_dict_and_model_config(model_ckpt[0], device)
         model = model_config.instantiate()
         model.setup_from_number(model_state_dict["gaussians.means"].shape[0])
@@ -298,7 +298,7 @@ class VanillaPVGModelLoader:
         if os.path.exists(env_light_ckpt_file):
             renderer = PeriodicVibrationGaussianRenderer(anti_aliased=False).instantiate()
             renderer.setup("validation")
-            env_ckpt = torch.load(env_light_ckpt_file, map_location="cpu")
+            env_ckpt = torch.load(env_light_ckpt_file, map_location="cpu", weights_only=False)
             renderer.env_map.base = env_ckpt[0][0]
         else:
             renderer = PeriodicVibrationGaussianRenderer(env_map_res=-1, anti_aliased=False).instantiate()
@@ -349,7 +349,7 @@ class GSplatV1ExampleCheckpointLoader:
 
     @classmethod
     def load(cls, path, device, anti_aliased: bool = True, eval_mode: bool = True, pre_activate: bool = True):
-        ckpt = torch.load(path, map_location="cpu")
+        ckpt = torch.load(path, map_location="cpu", weights_only=False)
         return cls.load_from_ckpt(
             ckpt,
             device=device,

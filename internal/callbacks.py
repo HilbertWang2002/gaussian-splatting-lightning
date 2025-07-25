@@ -3,8 +3,9 @@ import sys
 import math
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.callbacks.progress.tqdm_progress import TQDMProgressBar, Tqdm
-
-
+from lightning import Trainer, LightningModule
+from lightning.pytorch.cli import SaveConfigCallback
+import shutil
 class SaveCheckpoint(Callback):
     def on_train_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         if trainer.global_rank != 0:
@@ -113,3 +114,23 @@ class StopDataLoaderCacheThread(Callback):
 
     def on_train_end(self, trainer, pl_module) -> None:
         self._stop_thread(trainer.train_dataloader)
+
+class MySaveConfigCallback(SaveConfigCallback):
+
+
+    def save_config(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
+        command = sys.argv
+        log_dir = trainer.log_dir 
+        assert log_dir is not None
+        log_dir = os.path.join(log_dir, "command_configs")
+        os.makedirs(log_dir, exist_ok=True)
+        # 找到-c或者--config_path对应的值
+        config_path = None
+        for i, arg in enumerate(command):
+            if arg in ("-c", "--config_path") and i + 1 < len(command):
+                config_path = command[i + 1]
+                break
+        if config_path is not None:
+            shutil.copy(config_path, os.path.join(log_dir, os.path.basename(config_path)))
+        with open(log_dir + '/' + "command.txt", "w") as f:
+            f.write(" ".join(command))

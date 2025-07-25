@@ -23,13 +23,21 @@ class BasicPointCloud:
     colors: np.array
     normals: np.array
 
+def fetch_ply_without_rgb(path):
+    plydata = PlyData.read(path)
+    vertices = plydata['vertex']
+    positions = np.vstack([vertices['x'], vertices['y'], vertices['z']]).T
+    return BasicPointCloud(points=positions, colors=None, normals=None)
 
 def fetch_ply_without_rgb_normalization(path):
     plydata = PlyData.read(path)
     vertices = plydata['vertex']
     positions = np.vstack([vertices['x'], vertices['y'], vertices['z']]).T
     colors = np.vstack([vertices['red'], vertices['green'], vertices['blue']]).T
-    normals = np.vstack([vertices['nx'], vertices['ny'], vertices['nz']]).T
+    try:
+        normals = np.vstack([vertices['nx'], vertices['ny'], vertices['nz']]).T
+    except:
+        normals = None
     return BasicPointCloud(points=positions, colors=colors, normals=normals)
 
 

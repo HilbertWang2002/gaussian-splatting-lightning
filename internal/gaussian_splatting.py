@@ -488,7 +488,6 @@ class GaussianSplatting(LightningModule):
         metrics, prog_bar = self.metric.get_validate_metrics(self, self.gaussian_model, batch, outputs)
         self.log_metrics(metrics, prog_bar, prefix=name, on_step=False, on_epoch=True)
         self.val_metrics.append((image_info[0], metrics))
-
         # write validation image
         if self.trainer.global_rank == 0 and self.hparams["save_val_output"] is True and (
                 self.hparams["max_save_val_output"] < 0 or batch_idx < self.hparams["max_save_val_output"]

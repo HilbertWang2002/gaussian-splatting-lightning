@@ -329,7 +329,7 @@ class GSplatAppearanceEmbeddingVisibilityMapRenderer(Renderer):
         scheduler = torch.optim.lr_scheduler.LambdaLR(
             optimizer=optimizer,
             lr_lambda=lambda iter: lr_final_factor ** min(max(iter - warm_up, 0) / max_steps, 1),
-            verbose=False,
+            # verbose=False,
         )
 
         return optimizer, scheduler

@@ -1,0 +1,49 @@
+max_steps: 100000
+model:
+  save_iterations: [20000, 40000, 60000, 80000]
+  gaussian:
+    class_path: VanillaGaussian
+    init_args:
+      optimization:
+          # means_lr_init: 0.000016
+          means_lr_scheduler:
+            class_path: ExponentialDecayScheduler
+            init_args:
+              # lr_final: 0.00000016
+              max_steps: 100000
+          # scales_lr: 0.0005
+  metric:
+    class_path: internal.metrics.inverse_depth_metrics.HasInverseDepthMetrics
+    init_args:
+      depth_output_key: hard_inverse_depth
+  renderer: internal.renderers.gsplat_renderer.GSPlatRenderer
+  renderer_output_types:
+    - rgb
+    - hard_inverse_depth
+  density:
+    class_path: internal.density_controllers.vanilla_density_controller.VanillaDensityController
+    init_args:
+      percent_dense: 0.01
+      densify_from_iter: 1600
+      densify_until_iter: 50000
+      densify_grad_threshold: 0.0001
+data:
+  train_max_num_images_to_cache: 64
+  val_max_num_images_to_cache: 64
+  test_max_num_images_to_cache: 64
+  async_caching: true
+  path: /data/xusj/Datasets/projs/rec250626/preprocessed
+  allow_mask_interpolation: true
+  parser:
+    class_path: internal.dataparsers.estimated_depth_colmap_dataparser.EstimatedDepthColmap
+    init_args:
+      mask_dir: /data/xusj/Datasets/projs/rec250626/preprocessed/masks
+      depth_scale_lower_bound: 0.1
+      depth_scale_upper_bound: 10.0
+      points_from: 'ply'
+      ply_file: /data/xusj/Datasets/projs/rec250626/point_cloud_merged.ply
+      ply_with_rgb: true
+      ply_downsample_rate: 1.0
+      depth_scale_name: '1'
+trainer:
+  check_val_every_n_epoch: 9999999

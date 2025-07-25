@@ -1,0 +1,62 @@
+max_steps: 50000
+save_iterations: [10000, 20000, 30000, 40000]
+logger: wandb
+trainer:
+  check_val_every_n_epoch: 999999
+  strategy:
+    class_path: internal.mp_strategy.MPStrategy
+  devices: -1
+model:
+  gaussian:
+    class_path: VanillaGaussian
+    init_args:
+      optimization:
+          # means_lr_init: 0.000016
+          means_lr_scheduler:
+            class_path: ExponentialDecayScheduler
+            init_args:
+              # lr_final: 0.00000016
+              max_steps: 50000
+          # scales_lr: 0.0005
+  metric: 
+    class_path: internal.metrics.inverse_depth_metrics.HasInverseDepthMetrics
+    # class_path: myimpl.metrics.imgrad_metrics.ImGradMetrics
+    init_args:
+      depth_output_key: hard_inverse_depth
+      # grad_loss_weight: 0.1
+      fused_ssim: true
+  renderer:
+    class_path: internal.renderers.gsplat_distributed_renderer.GSplatDistributedRenderer
+    init_args:
+      redistribute_until: 40000
+  renderer_output_types:
+    - rgb
+    - hard_inverse_depth
+  density:
+    class_path: internal.density_controllers.mcmc_density_contr oller.MCMCDensityController
+    init_args:
+      cap_max: 8000000
+      densify_from_iter: 800
+      densify_until_iter: 40000
+data:
+  train_max_num_images_to_cache: 64
+  val_max_num_images_to_cache: 64
+  test_max_num_images_to_cache: 64
+  async_caching: true
+  num_workers: 4
+  path: ../datasets/jmsd/perspective_v1
+  allow_mask_interpolation: true
+  distributed: true
+  parser:
+    class_path: internal.dataparsers.estimated_depth_colmap_dataparser.EstimatedDepthColmap
+    init_args:
+      mask_dir: ../datasets/jmsd/perspective_v1/masks
+      depth_scale_lower_bound: 0.1
+      depth_scale_upper_bound: 10.0
+      points_from: ply
+      ply_file: point_cloud_merged.ply
+      ply_with_rgb: true
+      ply_downsample_rate: 1.0
+      split_mode: experiment
+      eval_image_select_mode: step
+      eval_step: 128

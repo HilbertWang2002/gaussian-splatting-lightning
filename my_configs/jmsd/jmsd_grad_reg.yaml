@@ -1,0 +1,46 @@
+max_steps: 90000
+save_iterations: [20000, 40000, 60000, 80000]
+logger: wandb
+model:
+  metric: 
+    class_path: myimpl.metrics.imgrad_metrics.ImGradMetrics
+    init_args:
+      depth_output_key: hard_inverse_depth
+      grad_loss_weight = 0.1
+  renderer: internal.renderers.gsplat_renderer.GSPlatRenderer
+  renderer_output_types:
+    - rgb
+    - hard_inverse_depth
+  density:
+    class_path: internal.density_controllers.vanilla_density_controller.VanillaDensityController
+    init_args:
+      percent_dense: 0.01
+      densify_from_iter: 1500
+      densify_until_iter: 45000
+      densify_grad_threshold: 0.0001
+      # density_imgrad_threshold: 5.0
+data:
+  train_max_num_images_to_cache: 64
+  val_max_num_images_to_cache: 64
+  test_max_num_images_to_cache: 64
+  async_caching: true
+  num_workers: 4
+  path: ../datasets/jmsd/perspective_v1
+  allow_mask_interpolation: true
+  parser:
+    class_path: internal.dataparsers.estimated_depth_colmap_dataparser.EstimatedDepthColmap
+    init_args:
+      mask_dir: ../datasets/jmsd/perspective_v1/masks
+      depth_scale_lower_bound: 0.1
+      depth_scale_upper_bound: 10.0
+      points_from: ply
+      ply_file: point_cloud_merged.ply
+      ply_with_rgb: true
+      ply_downsample_rate: 1.0
+      split_mode: experiment
+      eval_image_select_mode: step
+      eval_step: 128
+trainer:
+  check_val_every_n_epoch: 999999
+  
+  

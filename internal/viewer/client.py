@@ -77,7 +77,7 @@ class ClientThread(threading.Thread):
         T = w2c[:3, 3]
 
         # construct camera
-        fx = torch.tensor([fov2focal(camera.fov, max(image_width, image_height))], dtype=torch.float)
+        fx = torch.tensor([fov2focal(75 / 180 * np.pi, max(image_width, image_height))], dtype=torch.float)
         camera = Cameras(
             R=R.unsqueeze(0),
             T=T.unsqueeze(0),
