@@ -3,8 +3,8 @@ import torch
 from dataclasses import dataclass, field
 from internal.metrics.vanilla_metrics import VanillaMetrics, VanillaMetricsImpl
 from internal.metrics.inverse_depth_metrics import HasInverseDepthMetrics, HasInverseDepthMetricsModule
-from internal.renderers.gsplat_v1_renderer import (GSplatV1, GSplatV1Renderer,
-                                                   GSplatV1RendererModule)
+# from internal.renderers.gsplat_v1_renderer import (GSplatV1, GSplatV1Renderer,
+#                                                    GSplatV1RendererModule)
 import torch.nn.functional as F
 
 @dataclass

@@ -1,5 +1,5 @@
 max_steps: 100000
-save_iterations: [20000, 40000, 60000, 80000]
+save_iterations: []
 logger: wandb
 trainer:
   check_val_every_n_epoch: 999999

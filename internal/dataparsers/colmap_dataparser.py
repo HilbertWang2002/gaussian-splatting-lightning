@@ -38,7 +38,7 @@ class Colmap(DataParserConfig):
 
     sparse_dir: str = None
 
-    split_mode: Literal["reconstruction", "experiment"] = "reconstruction"
+    split_mode: Literal["reconstruction", "experiment", "txt"] = "reconstruction"
 
     eval_image_select_mode: Literal["step", "ratio", "list", "list-optional"] = "step"
 
@@ -47,6 +47,8 @@ class Colmap(DataParserConfig):
     eval_ratio: float = 0.01
 
     eval_list: str = None
+
+    split_file: str = 'split.txt'
 
     scene_scale: float = 1.
 
@@ -609,7 +611,43 @@ class ColmapDataParser(DataParser):
 
         return training_set_indices, validation_set_indices
 
+    def build_split_from_txt_file(self, image_name_list) -> Tuple[list, list]:
+        assert self.params.split_mode == "txt", "split_mode must be 'txt' to use this method"
+        split_file_path = os.path.join(self.path, self.params.split_file)
+        if not os.path.exists(split_file_path):
+            raise RuntimeError("split file {} does not exist".format(split_file_path))
+
+        with open(split_file_path, "r") as f:
+            lines = f.read().strip().split('\n')
+
+        train_set_indices = set()
+        eval_set_indices = set()
+        
+        for idx, line in enumerate(lines):
+            line = line.strip()
+            if line.startswith("#") or len(line) == 0:
+                continue
+            if line =='[train]':
+                _l = train_set_indices
+            elif line == '[val]':
+                _l = eval_set_indices
+            else:
+                try:
+                    _idx = image_name_list.index(line)
+                    _l.add(_idx)
+                except ValueError:
+                    print("[WARNING] image {} not found in colmap sparse model".format(line))
+                    continue
+                except NameError:
+                    print("[WARNING] image {} does not belong to either [train] or [val]".format(line))
+                    continue
+        print("[colmap dataparser] train set images: {}, val set images: {}".format(len(train_set_indices), len(eval_set_indices)))
+        return list(train_set_indices), list(eval_set_indices)
+
     def build_split_indices(self, image_name_list) -> Tuple[list, list]:
+        if self.params.split_mode == "txt":
+            # split by text file
+            return self.build_split_from_txt_file(image_name_list)
         if self.params.eval_image_select_mode.startswith("list"):
             return self.build_eval_list_split_indices(image_name_list)
         assert self.params.eval_list is None, "eval_image_select_mode=='{}', but eval_list is not None".format(self.params.eval_image_select_mode)

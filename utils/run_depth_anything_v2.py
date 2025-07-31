@@ -88,7 +88,10 @@ try:
         for _ in t:
             image_path, raw_image = image_reader.get()
             image_name = image_path[len(args.image_dir):].lstrip(os.path.sep)
-
+            if os.path.exists(os.path.join(args.output, "{}.npy".format(image_name))):
+                t.set_description(f"Skipping {image_name} as it already exists.")
+                continue
+            t.set_description(f"Processing {image_name}")
             depth = depth_anything.infer_image(raw_image, args.input_size)
             normalized_depth = (depth - depth.min()) / (depth.max() - depth.min())
 

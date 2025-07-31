@@ -32,6 +32,18 @@ class ClientThread(threading.Thread):
             client.camera.look_at = np.asarray(viewer.default_camera_look_at)
 
         client.camera.up_direction = viewer.up_direction
+        
+        client_tabs =  client.gui.add_tab_group()
+        with client_tabs.add_tab("Camera"):
+            self.fov_modifier = client.gui.add_slider(
+                label="FOV modifier",
+                initial_value=1.41,
+                min=0.2,
+                max=5.0,
+                step=0.01,
+            )
+            self.camera_extrinsics_text = client.gui.add_text(label="camera extrinsics", initial_value="", multiline=True)
+            self.update_camera_extrinsics_text(client.camera)
 
         @client.camera.on_update
         def _(cam: viser.CameraHandle) -> None:
@@ -39,6 +51,30 @@ class ClientThread(threading.Thread):
                 self.last_camera = cam
                 self.state = "low"  # switch to low resolution mode when a new camera received
                 self.render_trigger.set()
+                self.update_camera_extrinsics_text(cam)
+        
+        @self.fov_modifier.on_update
+        def _(event: viser.GuiEvent) -> None:
+                self.render_trigger.set()
+        
+        @self.camera_extrinsics_text.on_update
+        def _(event: viser.GuiEvent) -> None:
+            try:
+                _extrinsics = np.array(eval(self.camera_extrinsics_text.value))
+            except:
+                pass
+            self.client.camera.position = _extrinsics[:3, 3]
+            self.client.camera.wxyz = (vtf.SO3.from_matrix(_extrinsics[:3, :3]) @ vtf.SO3.from_x_radians(np.pi)).wxyz
+ 
+    def update_camera_extrinsics_text(self, camera: viser.CameraHandle):
+        R = vtf.SO3(wxyz=camera.wxyz)
+        R = R @ vtf.SO3.from_x_radians(np.pi)
+        R = R.as_matrix()
+        c2w = np.eye(4)
+        c2w[:3, :3] = R
+        c2w[:3, 3] = camera.position
+
+        self.camera_extrinsics_text.value = np.array2string(c2w, separator=', ')
 
     @classmethod
     def get_camera(
@@ -77,7 +113,62 @@ class ClientThread(threading.Thread):
         T = w2c[:3, 3]
 
         # construct camera
-        fx = torch.tensor([fov2focal(75 / 180 * np.pi, max(image_width, image_height))], dtype=torch.float)
+        fx = torch.tensor([fov2focal(camera.fov, max(image_width, image_height))], dtype=torch.float)
+        camera = Cameras(
+            R=R.unsqueeze(0),
+            T=T.unsqueeze(0),
+            fx=fx,
+            fy=fx,
+            cx=torch.tensor([(image_width // 2)], dtype=torch.int),
+            cy=torch.tensor([(image_height // 2)], dtype=torch.int),
+            width=torch.tensor([image_width], dtype=torch.int),
+            height=torch.tensor([image_height], dtype=torch.int),
+            appearance_id=torch.tensor([appearance_id[0]], dtype=torch.int),
+            normalized_appearance_id=torch.tensor([appearance_id[1]], dtype=torch.float),
+            time=torch.tensor([time_value], dtype=torch.float),
+            distortion_params=None,
+            camera_type=torch.tensor([0], dtype=torch.int),
+        )[0]
+
+        return camera
+    
+    def get_camera_with_fov_modified(
+            self,
+            camera: viser.CameraHandle,
+            image_size: int,
+            appearance_id: tuple[int, float] = (0, 0),
+            time_value: float = 0.,
+            camera_transform=None,
+    ):
+        # calculate image width and height
+        image_height = image_size
+        image_width = int(image_height * camera.aspect)
+        if image_width > image_size:
+            image_width = image_size
+            image_height = int(image_width / camera.aspect)
+
+        # get camera pose
+        R = vtf.SO3(wxyz=camera.wxyz)
+        R = R @ vtf.SO3.from_x_radians(np.pi)
+        R = torch.tensor(R.as_matrix())
+        pos = torch.tensor(camera.position, dtype=torch.float64)
+        c2w = torch.eye(4)
+        c2w[:3, :3] = R
+        c2w[:3, 3] = pos
+
+        if camera_transform is not None:
+            c2w = torch.matmul(camera_transform, c2w)
+
+        # change from OpenGL/Blender camera axes (Y up, Z back) to COLMAP (Y down, Z forward)
+        c2w[:3, 1:3] *= -1
+
+        # get the world-to-camera transform and set R, T
+        w2c = torch.linalg.inv(c2w)
+        R = w2c[:3, :3]
+        T = w2c[:3, 3]
+
+        # construct camera
+        fx = torch.tensor([fov2focal(camera.fov*self.fov_modifier.value, max(image_width, image_height))], dtype=torch.float)
         camera = Cameras(
             R=R.unsqueeze(0),
             T=T.unsqueeze(0),
@@ -101,7 +192,7 @@ class ClientThread(threading.Thread):
             self.last_move_time = time.time()
 
             max_res, jpeg_quality = self.get_render_options()
-            camera = self.get_camera(
+            camera = self.get_camera_with_fov_modified(
                 self.client.camera,
                 image_size=max_res,
                 appearance_id=self.viewer.get_appearance_id_value(),

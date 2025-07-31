@@ -164,7 +164,7 @@ class GaussianPlyUtils:
         return GaussianPlyUtils(
             sh_degrees=self.sh_degrees,
             xyz=torch.tensor(self.xyz, dtype=torch.float),
-            opacities=torch.tensor(self.opacities, dtype=torch.float),
+            opacities=torch.tensor(self.opacities.copy(), dtype=torch.float),
             features_dc=torch.tensor(self.features_dc, dtype=torch.float).transpose(1, 2),
             features_rest=torch.tensor(self.features_rest, dtype=torch.float).transpose(1, 2),
             scales=torch.tensor(self.scales, dtype=torch.float),

@@ -1,5 +1,6 @@
 .idea
 .vscode
+.venv
 logs
 outputs
 camera_paths
@@ -7,6 +8,7 @@ renders
 edited
 clusters
 segments
+thirdparty
 **/__pycache__
 
 utils/Depth-Anything-V2

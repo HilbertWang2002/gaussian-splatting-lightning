@@ -32,7 +32,7 @@ if args.output is None:
 assert os.path.exists(args.output) is False, f"Output file already exists, please remove it first: '{args.output}'"
 
 print(f"Loading checkpoint '{load_file}'...")
-ckpt = torch.load(load_file)
+ckpt = torch.load(load_file, weights_only=False, map_location="cpu")
 print("Converting...")
 model = GaussianPlyUtils.load_from_state_dict(ckpt["state_dict"]).to_ply_format().save_to_ply(args.output, args.colored)
 print(f"Saved to '{args.output}'")
