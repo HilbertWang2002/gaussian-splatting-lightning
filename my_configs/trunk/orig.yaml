@@ -1,0 +1,12 @@
+model:
+  renderer: internal.renderers.gsplat_v1_renderer.GSplatV1Renderer
+model:
+  renderer: internal.renderers.gsplat_renderer.GSPlatRenderer
+data:
+  num_workers: 4
+  path: ../datasets/tandt_db/tandt/truck/
+  parser:
+    class_path: internal.dataparsers.colmap_dataparser.Colmap
+    init_args:
+      down_sample_factor: 2
+      down_sample_rounding_mode: round_half_up

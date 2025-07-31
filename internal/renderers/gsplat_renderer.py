@@ -213,7 +213,7 @@ class GSPlatRenderer(Renderer):
             scaling_modifier=1.0,
             anti_aliased: bool = DEFAULT_ANTI_ALIASED_STATUS,
             colors_precomp: Optional[torch.Tensor] = None,
-            color_computer: Optional = None,
+            color_computer: Optional[Callable] = None,
             block_size: int = DEFAULT_BLOCK_SIZE,
             extra_projection_kwargs: dict = None,
     ):
